@@ -18,10 +18,13 @@ export const api = {
   campaigns: () => req('/campaigns'),
   events: (day) => req('/events' + (day ? `?business_day=${encodeURIComponent(day)}` : '')),
   addEvent: (body) => req('/events', { method: 'POST', body: JSON.stringify(body) }),
+  // 核销写入口二（API 专用），与页面 /events 的 redeem 共用后端同一业务日写闸
+  redeem: (body) => req('/redeem', { method: 'POST', body: JSON.stringify(body) }),
   facts: (day) => req('/facts' + (day ? `?business_day=${encodeURIComponent(day)}` : '')),
   preview: (day) => req('/redeem/preview' + (day ? `?business_day=${encodeURIComponent(day)}` : '')),
   seal: (body) => req('/redeem/seal', { method: 'POST', body: JSON.stringify(body) }),
   batches: () => req('/batches'),
+  batchDetail: (id) => req(`/batches/${id}`),
   getDay: () => req('/settings/day'),
   setDay: (business_day) => req('/settings/day', { method: 'PUT', body: JSON.stringify({ business_day }) }),
 }

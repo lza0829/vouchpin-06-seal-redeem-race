@@ -39,10 +39,21 @@ def open_facts_for_day(conn: sqlite3.Connection, business_day: str) -> list[dict
 
 def mark_batched(conn: sqlite3.Connection, fact_ids: list[int], batch_id: int) -> None:
     for fid in fact_ids:
-        conn.execute(
-            "UPDATE redeem_facts SET status='sealed', batch_id=? WHERE id=?",
+        # 仅允许 open 事实被钉入批次；并发下若状态已变则影响行数为 0，由上层判定。
+        cur = conn.execute(
+            "UPDATE redeem_facts SET status='sealed', batch_id=? WHERE id=? AND status='open'",
             (batch_id, fid),
         )
+        if cur.rowcount != 1:
+            raise RuntimeError(f"事实 {fid} 已非 open，钉扎快照与当前状态不一致，整笔回滚")
+
+
+def facts_for_batch(conn: sqlite3.Connection, batch_id: int) -> list[dict[str, Any]]:
+    rows = conn.execute(
+        "SELECT * FROM redeem_facts WHERE batch_id=? ORDER BY id",
+        (batch_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def day_is_sealed(conn: sqlite3.Connection, business_day: str) -> bool:

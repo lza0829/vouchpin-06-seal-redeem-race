@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any
+
 from fastapi import APIRouter, Query
 from app.services import redeem_service as svc
 
@@ -17,10 +17,15 @@ def preview(business_day: str | None = Query(None)):
 
 
 @router.post("/redeem/seal")
-def seal(body: dict[str, Any]):
+def seal(body: dict):
     return svc.seal(body)
 
 
 @router.get("/batches")
 def batches():
     return svc.list_batches()
+
+
+@router.get("/batches/{batch_id}")
+def batch_detail(batch_id: int):
+    return svc.get_batch_detail(batch_id)

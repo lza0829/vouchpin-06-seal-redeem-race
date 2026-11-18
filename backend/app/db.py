@@ -46,11 +46,18 @@ CREATE TABLE IF NOT EXISTS redeem_batches (
 );
 '''
 
+# 写锁等待上限：跨进程并发时，BEGIN IMMEDIATE 拿不到库级写锁最多等待该时长，
+# 而不是立刻 SQLITE_BUSY。配合进程内业务日闸，正常路径不会触顶。
+BUSY_TIMEOUT_MS = 5000
+
 
 def connect(immediate: bool = False) -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=BUSY_TIMEOUT_MS / 1000)
     conn.row_factory = sqlite3.Row
+    conn.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
+    conn.execute("PRAGMA foreign_keys=ON")
     if immediate:
+        # 立即取得 SQLite 库级写锁（跨进程互斥），把「检查→写入」收成一个事务。
         conn.execute("BEGIN IMMEDIATE")
     return conn
 
@@ -58,6 +65,8 @@ def connect(immediate: bool = False) -> sqlite3.Connection:
 def init_db() -> None:
     conn = connect()
     try:
+        # WAL 允许写事务进行时读不阻塞；写与写仍由库级 RESERVED/EXCLUSIVE 锁互斥。
+        conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript(SCHEMA)
         conn.commit()
     finally:

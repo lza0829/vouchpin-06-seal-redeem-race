@@ -17,10 +17,16 @@ onMounted(load)
       <div class="stat"><div class="k">今日事件</div><div class="v">{{ d.event_count }}</div></div>
       <div class="stat"><div class="k">核销事实</div><div class="v ticket">{{ d.fact_count }}</div></div>
       <div class="stat"><div class="k">待钉 open</div><div class="v">{{ d.open_fact_count }}</div></div>
+      <div class="stat"><div class="k">已钉 sealed</div><div class="v ticket">{{ d.sealed_fact_count }}</div></div>
       <div class="stat"><div class="k">今日核销额</div><div class="v ticket">{{ d.redeem_total_today }}</div></div>
       <div class="stat"><div class="k">日已钉扎</div><div class="v">{{ d.day_sealed ? '是' : '否' }}</div></div>
+      <div class="stat"><div class="k">已钉计数对账</div>
+        <div class="v" :class="{ ok: d.sealed_reconciles, err: !d.sealed_reconciles }">
+          {{ d.sealed_reconciles ? '一致' : '不一致' }}
+        </div>
+      </div>
     </div>
-    <p class="msg" v-if="!err">票根洋红标出核销侧数字；钉扎后禁止再写入该日核销。</p>
+    <p class="msg" v-if="!err">票根洋红标出核销侧数字；钉扎事务持业务日写锁期间拒绝新核销，释放后日已 sealed 再核销返回 409。</p>
     <p class="msg err" v-if="err">{{ err }}</p>
   </div>
 </template>
